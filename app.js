@@ -376,7 +376,14 @@ async function analyzeSelection() {
   const selected    = [...state.selectedClues].sort();
   const insightIds  = [...state.unlockedInsights];
 
-  if (!selected.length) return;
+  // Tillåt tomma ledtrådsval om det kan finnas insikt-till-insikt-kedjor
+  const hasInsightOnlyCandidate = state.insights.some(insight =>
+    !state.unlockedInsights.has(insight.id) &&
+    (insight.required_clues?.length ?? 0) === 0 &&
+    (insight.required_insights?.length ?? 0) > 0 &&
+    (insight.required_insights || []).every(id => state.unlockedInsights.has(id))
+  );
+  if (!selected.length && !hasInsightOnlyCandidate) return;
 
   // Hitta matchande insikt
   const match = state.insights.find(insight => {
