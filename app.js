@@ -31,6 +31,7 @@ const state = {
   clues:            [],   // alla ledtrådar för detta fall
   insights:         [],   // alla insikter
   verdicts:         [],   // alla slutbeslut
+  scenes:           [],   // rumsatmosfärer
 
   // Spelarens progress
   foundClues:       new Set(),   // etiketter: 'A', 'B', ...
@@ -40,6 +41,7 @@ const state = {
   // UI
   selectedClues:    new Set(),   // valda i kombinationen
   openClue:         null,        // aktuell ledtråd i modal
+  visitedDecoys:    new Set(),   // besökta decoy-id:n
 };
 
 // ════════════════════════════════════════════════════════
@@ -72,10 +74,11 @@ async function loadCase() {
   state.caseData = c;
 
   // Ladda all speldata parallellt
-  const [cluesRes, insightsRes, verdictsRes] = await Promise.all([
+  const [cluesRes, insightsRes, verdictsRes, scenesRes] = await Promise.all([
     db.from('clues').select('*').eq('case_id', c.id),
     db.from('insights').select('*').eq('case_id', c.id),
     db.from('verdicts').select('*').eq('case_id', c.id),
+    db.from('room_scenes').select('*').eq('case_id', c.id),
   ]);
 
   if (cluesRes.error)    throw cluesRes.error;
@@ -85,6 +88,7 @@ async function loadCase() {
   state.clues    = cluesRes.data    || [];
   state.insights = insightsRes.data || [];
   state.verdicts = verdictsRes.data || [];
+  state.scenes   = scenesRes.data   || [];
 }
 
 async function loadProgress() {
@@ -218,41 +222,84 @@ function renderAllRooms() {
     <p class="case-text">${escHtml(c.description)}</p>
   `;
 
-  // Rumsspecifika ledtrådar
-  renderRoomClues('Arkivrummet',  'clues-archive');
-  renderRoomClues('Perrongen',    'clues-platform');
-  renderRoomClues('Minnesrummet', 'clues-memory');
+  // Rumsspecifika objekt
+  renderRoomScene('Arkivrummet',  'clues-archive');
+  renderRoomScene('Perrongen',    'clues-platform');
+  renderRoomScene('Minnesrummet', 'clues-memory');
 }
 
-function renderRoomClues(location, containerId) {
+function renderRoomScene(location, containerId) {
   const container = document.getElementById(containerId);
-  const roomClues = state.clues.filter(c => c.location === location);
+  const roomObjects = state.clues.filter(c => c.location === location);
+  const scene = state.scenes.find(s => s.location === location);
 
-  if (!roomClues.length) {
-    container.innerHTML = '<p class="empty-state">Inga ledtrådar hittades här.</p>';
-    return;
-  }
+  const bgClass = scene?.bg_class ?? '';
+  const atmo    = scene?.scene_desc ?? '';
 
-  container.innerHTML = roomClues.map(clue => {
-    const collected = state.foundClues.has(clue.label);
+  const objectsHtml = roomObjects.map(obj => {
+    const collected     = !obj.is_decoy && state.foundClues.has(obj.label);
+    const decoyVisited  = obj.is_decoy && state.visitedDecoys.has(obj.id);
+    const clueVisited   = !obj.is_decoy && !collected; // seen but not collected shows dot as dim
+    const dotState      = collected ? 'collected' : decoyVisited ? 'visited' : '';
+
+    const emoji = escHtml(obj.object_emoji || '❓');
+    const name  = escHtml(obj.object_name  || obj.label);
+
     return `
-      <div class="clue-card ${collected ? 'collected' : ''}"
-           data-clue-id="${escHtml(clue.id)}"
-           role="button" tabindex="0"
-           aria-label="Ledtråd ${escHtml(clue.label)}: ${escHtml(clue.description)}">
-        <div class="clue-badge">${escHtml(clue.label)}</div>
-        <h4>${escHtml(clue.description).slice(0, 60)}${clue.description.length > 60 ? '…' : ''}</h4>
-        <p>${escHtml(clue.description)}</p>
-      </div>
+      <button class="obj-btn ${dotState}"
+              data-clue-id="${escHtml(obj.id)}"
+              aria-label="${name}"
+              ${collected ? 'disabled' : ''}>
+        <span class="obj-dot"></span>
+        <span class="obj-emoji">${emoji}</span>
+        <span class="obj-name">${name}</span>
+      </button>
     `;
   }).join('');
 
-  container.querySelectorAll('.clue-card').forEach(card => {
-    card.addEventListener('click', () => openClueModal(card.dataset.clueId));
-    card.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') openClueModal(card.dataset.clueId);
-    });
+  container.innerHTML = `
+    <div class="scene-wrap">
+      <div class="${bgClass}">
+        ${atmo ? `<p class="scene-atmo">${escHtml(atmo)}</p>` : ''}
+        <div class="object-grid">${objectsHtml}</div>
+      </div>
+    </div>
+  `;
+
+  container.querySelectorAll('.obj-btn:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => handleObjectClick(btn.dataset.clueId));
   });
+}
+
+function handleObjectClick(clueId) {
+  const obj = state.clues.find(c => c.id === clueId);
+  if (!obj) return;
+
+  if (obj.is_decoy) {
+    state.visitedDecoys.add(obj.id);
+    showDecoyFeedback(obj.decoy_text || 'Ingenting av intresse här.');
+    // Uppdatera knappens utseende till "visited"
+    const btn = document.querySelector(`.obj-btn[data-clue-id="${clueId}"]`);
+    if (btn) btn.classList.add('visited');
+  } else {
+    openClueModal(clueId);
+  }
+}
+
+function showDecoyFeedback(text) {
+  const toast = document.getElementById('decoy-toast');
+  if (!toast) return;
+  toast.textContent = text;
+  toast.classList.remove('show');
+  void toast.offsetWidth; // trigga reflow för att återstarta animationen
+  toast.classList.add('show');
+}
+
+// Renderera om alla rum (kallas efter insamling)
+function rerenderRooms() {
+  renderRoomScene('Arkivrummet',  'clues-archive');
+  renderRoomScene('Perrongen',    'clues-platform');
+  renderRoomScene('Minnesrummet', 'clues-memory');
 }
 
 // ════════════════════════════════════════════════════════
@@ -295,9 +342,7 @@ async function collectCurrentClue() {
   closeClueModal();
 
   // Uppdatera UI
-  renderRoomClues('Arkivrummet',  'clues-archive');
-  renderRoomClues('Perrongen',    'clues-platform');
-  renderRoomClues('Minnesrummet', 'clues-memory');
+  rerenderRooms();
   renderInventory();
   updateBadges();
 
