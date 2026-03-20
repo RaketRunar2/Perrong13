@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perrong 13</title>
+
+  <!-- Supabase JS CDN (UMD build – exponerar global `supabase`) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital@0;1&family=Courier+Prime&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- INTRO-SKÄRM                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="screen-intro" class="screen active">
+  <div class="intro-container">
+    <p class="intro-overline">Kriminalfall &bull; Perrong 13</p>
+    <h1 class="intro-title">PERRONG <span class="gold">13</span></h1>
+    <p class="intro-subtitle">Döden väcker de döda. Du är deras enda hopp.</p>
+    <div class="intro-divider"></div>
+    <div id="case-info" class="case-info">
+      <p class="loading-text">Laddar fall&hellip;</p>
+    </div>
+    <button id="btn-start" class="btn btn-primary" disabled>Påbörja utredningen</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SPEL-SKÄRM                                              -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">PERRONG <span class="gold">13</span></span>
+      <span id="topbar-case" class="topbar-case"></span>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-badge" id="badge-clues">Ledtrådar: <strong id="count-clues">0</strong></span>
+      <span class="topbar-badge" id="badge-insights">Insikter: <strong id="count-insights">0</strong></span>
+    </div>
+  </header>
+
+  <!-- Rumsnavigation -->
+  <nav class="room-nav">
+    <button class="room-btn active" data-room="lobby">Vänthallen</button>
+    <button class="room-btn" data-room="archive">Arkivrummet</button>
+    <button class="room-btn" data-room="platform">Perrongen</button>
+    <button class="room-btn" data-room="memory">Minnesrummet</button>
+    <button class="room-btn" data-room="insights">Insiktsbrädan</button>
+  </nav>
+
+  <!-- Rumsinnehåll -->
+  <main class="game-main">
+
+    <!-- VÄNTHALLEN -->
+    <section id="room-lobby" class="room active">
+      <div class="room-header">
+        <h2 class="room-title">Vänthallen</h2>
+        <p class="room-desc">Dimman hänger tungt över perrongen. Gaslyktorna flämtar. Någonstans i mörkret väntar en själ på svar – och du är den enda som kan ge dem.</p>
+      </div>
+      <div class="room-body lobby-body">
+        <div class="case-card" id="lobby-case-card">
+          <p class="loading-text">Laddar fallbeskrivning&hellip;</p>
+        </div>
+        <div class="lobby-instructions">
+          <h3>Hur du utreder</h3>
+          <ol>
+            <li>Besök varje rum och klicka på ledtrådar för att samla dem i ditt inventarium.</li>
+            <li>Gå till <em>Insiktsbrädan</em> och kombinera ledtrådar för att låsa upp insikter.</li>
+            <li>När du har tillräckligt med insikter kan du lämna ditt <strong>Slutbeslut</strong>.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARKIVRUMMET -->
+    <section id="room-archive" class="room">
+      <div class="room-header">
+        <h2 class="room-title">Arkivrummet</h2>
+        <p class="room-desc">Dammiga hyllor. Doften av ålder och hemligheter. Varje pärm bär ett fragment av sanningen.</p>
+      </div>
+      <div class="clue-grid" id="clues-archive"></div>
+    </section>
+
+    <!-- PERRONGEN -->
+    <section id="room-platform" class="room">
+      <div class="room-header">
+        <h2 class="room-title">Perrongen</h2>
+        <p class="room-desc">Kalla stensättor, metalliska ekot av fjärran tåg. Det är här allt slutade – eller kanske började.</p>
+      </div>
+      <div class="clue-grid" id="clues-platform"></div>
+    </section>
+
+    <!-- MINNESRUMMET -->
+    <section id="room-memory" class="room">
+      <div class="room-header">
+        <h2 class="room-title">Minnesrummet</h2>
+        <p class="room-desc">Ekon av ord aldrig glömda. Bilder som fladdrar som mottlösa ljuslågor i vinddraget.</p>
+      </div>
+      <div class="clue-grid" id="clues-memory"></div>
+    </section>
+
+    <!-- INSIKTSBRÄDAN -->
+    <section id="room-insights" class="room">
+      <div class="room-header">
+        <h2 class="room-title">Insiktsbrädan</h2>
+        <p class="room-desc">Lägg pusselbitarna på plats. Varje koppling avslöjar ett lager av sanningen.</p>
+      </div>
+
+      <div class="insights-layout">
+        <div class="insights-left">
+          <h3 class="panel-title">Ditt inventarium</h3>
+          <div id="inventory-list" class="inventory-list">
+            <p class="empty-state">Inga ledtrådar insamlade ännu.</p>
+          </div>
+
+          <h3 class="panel-title mt-lg">Kombinera ledtrådar</h3>
+          <p class="hint-text">Välj ledtrådar ur inventariet och klicka "Analysera".</p>
+          <div id="combine-slots" class="combine-slots"></div>
+          <button id="btn-analyze" class="btn btn-secondary">Analysera</button>
+          <div id="analyze-result" class="analyze-result hidden"></div>
+        </div>
+
+        <div class="insights-right">
+          <h3 class="panel-title">Låsta insikter</h3>
+          <div id="insights-list" class="insights-list">
+            <p class="empty-state">Inga insikter upplåsta ännu.</p>
+          </div>
+
+          <div id="verdict-section" class="verdict-section hidden">
+            <h3 class="panel-title">Slutbeslut</h3>
+            <p class="hint-text">Du har utrett tillräckligt. Det är dags att fälla ditt avgörande.</p>
+            <div id="verdicts-list" class="verdicts-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLUTSKÄRM                                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="screen-ending" class="screen">
+  <div class="ending-container">
+    <div id="ending-icon" class="ending-icon"></div>
+    <p class="ending-overline" id="ending-label"></p>
+    <h2 class="ending-title" id="ending-title"></h2>
+    <p class="ending-body" id="ending-body"></p>
+    <div id="ending-flavor" class="ending-flavor"></div>
+    <button id="btn-restart" class="btn btn-primary">Undersök igen</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- LEDTRÅDS-MODAL                                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="clue-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-label" id="modal-label"></span>
+      <button class="modal-close" id="modal-close">&times;</button>
+    </div>
+    <h3 class="modal-title" id="modal-title"></h3>
+    <p class="modal-body" id="modal-body"></p>
+    <div class="modal-footer">
+      <span class="modal-location" id="modal-location"></span>
+      <button class="btn btn-primary" id="modal-collect">Lägg i inventariet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- INSIKTS-MODAL                                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="insight-modal" class="modal-overlay hidden">
+  <div class="modal modal-insight">
+    <div class="insight-flash">&#10024;</div>
+    <h3 class="modal-title" id="insight-modal-title">Insikt upplåst!</h3>
+    <p class="modal-body" id="insight-modal-body"></p>
+    <button class="btn btn-primary" id="insight-modal-close">Fortsätt utredningen</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
