@@ -1,0 +1,7 @@
+# Hemligheter – lägg aldrig upp dessa på GitHub
+.mcp.json
+.env
+.env.local
+
+# Claude local settings
+.claude/settings.local.json
