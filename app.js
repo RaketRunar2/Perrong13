@@ -239,7 +239,6 @@ function renderRoomScene(location, containerId) {
   const objectsHtml = roomObjects.map(obj => {
     const collected     = !obj.is_decoy && state.foundClues.has(obj.label);
     const decoyVisited  = obj.is_decoy && state.visitedDecoys.has(obj.id);
-    const clueVisited   = !obj.is_decoy && !collected; // seen but not collected shows dot as dim
     const dotState      = collected ? 'collected' : decoyVisited ? 'visited' : '';
 
     const emoji = escHtml(obj.object_emoji || '❓');
@@ -313,7 +312,7 @@ function openClueModal(clueId) {
   const collected = state.foundClues.has(clue.label);
 
   document.getElementById('modal-label').textContent    = clue.label;
-  document.getElementById('modal-title').textContent    = `Ledtråd ${clue.label}`;
+  document.getElementById('modal-title').textContent    = clue.object_name || `Ledtråd ${clue.label}`;
   document.getElementById('modal-body').textContent     = clue.description;
   document.getElementById('modal-location').textContent = `Plats: ${clue.location}`;
 
