@@ -4,6 +4,25 @@
 
 'use strict';
 
+// ── Hotspot-positioner (% av scenens bredd/höjd) ─────────
+// x%, y% = centrum för hotspot-knappen
+const ROOM_POSITIONS = {
+  'A': { x: 13, y: 40 },  // Protokollhyllan  – bokhyllor vänster
+  'B': { x:  9, y: 76 },  // Resväskan        – perrong vänster
+  'C': { x: 67, y: 65 },  // Färjeloggen      – skrivbord
+  'D': { x: 34, y: 62 },  // Grammofonen      – bord vänster
+  'E': { x: 37, y: 84 },  // Det våta spåret  – spår
+  'F': { x: 82, y: 47 },  // Biljettluckan    – biljettlucka höger
+  'G': { x: 61, y: 33 },  // Blomkransen      – vägg höger
+  'H': { x: 87, y: 65 },  // Eldstaden        – spis höger
+  'I': { x: 15, y: 63 },  // Bänken (lockbete)– perrong vänster
+  'J': { x:  5, y: 10 },  // Spindelnätet (l) – hörn uppe vänster
+  'K': { x: 14, y: 42 },  // Fönstret (lockbete)– minnesrummet
+  'L': { x: 50, y: 30 },  // Stationsuret     – klockstolpe center
+  'M': { x: 56, y: 67 },  // Passagerarlistan – skrivbord
+  'N': { x: 82, y: 44 },  // Spegelns baksida – spegel höger
+};
+
 // ── Supabase-konfiguration ───────────────────────────────
 const SUPABASE_URL = 'https://sqcoumpttwoeredmnzqn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_7yTzrqJyg8sWJjvpp-dkKA_06Dldp7M';
@@ -231,41 +250,36 @@ function renderAllRooms() {
 function renderRoomScene(location, containerId) {
   const container = document.getElementById(containerId);
   const roomObjects = state.clues.filter(c => c.location === location);
-  const scene = state.scenes.find(s => s.location === location);
 
-  const bgClass = scene?.bg_class ?? '';
-  const atmo    = scene?.scene_desc ?? '';
+  const hsClass = { 'Arkivrummet': 'hs-archive', 'Perrongen': 'hs-platform', 'Minnesrummet': 'hs-memory' }[location] || '';
 
-  const objectsHtml = roomObjects.map(obj => {
-    const collected     = !obj.is_decoy && state.foundClues.has(obj.label);
-    const decoyVisited  = obj.is_decoy && state.visitedDecoys.has(obj.id);
-    const dotState      = collected ? 'collected' : decoyVisited ? 'visited' : '';
-
-    const emoji = escHtml(obj.object_emoji || '❓');
-    const name  = escHtml(obj.object_name  || obj.label);
+  const hotspotsHtml = roomObjects.map(obj => {
+    const pos          = ROOM_POSITIONS[obj.label] || { x: 50, y: 50 };
+    const collected    = !obj.is_decoy && state.foundClues.has(obj.label);
+    const decoyVisited = obj.is_decoy  && state.visitedDecoys.has(obj.id);
+    const stateClass   = collected ? 'collected' : decoyVisited ? 'visited' : '';
+    const emoji        = escHtml(obj.object_emoji || '❓');
+    const name         = escHtml(obj.object_name  || obj.label);
 
     return `
-      <button class="obj-btn ${dotState}"
+      <button class="scene-hotspot ${hsClass} ${stateClass}"
               data-clue-id="${escHtml(obj.id)}"
+              style="left:${pos.x}%;top:${pos.y}%"
               aria-label="${name}"
               ${collected ? 'disabled' : ''}>
-        <span class="obj-dot"></span>
-        <span class="obj-emoji">${emoji}</span>
-        <span class="obj-name">${name}</span>
-      </button>
-    `;
+        <span class="hotspot-emoji">${emoji}</span>
+        <span class="hotspot-label">${name}</span>
+      </button>`;
   }).join('');
 
-  container.innerHTML = `
-    <div class="scene-wrap">
-      <div class="${bgClass}">
-        ${atmo ? `<p class="scene-atmo">${escHtml(atmo)}</p>` : ''}
-        <div class="object-grid">${objectsHtml}</div>
-      </div>
-    </div>
-  `;
+  // SVG-scene hämtas från hidden template i HTML
+  const svgKey   = { 'Arkivrummet': 'svg-archive', 'Perrongen': 'svg-platform', 'Minnesrummet': 'svg-memory' }[location];
+  const svgEl    = document.getElementById(svgKey);
+  const svgHtml  = svgEl ? svgEl.innerHTML : '';
 
-  container.querySelectorAll('.obj-btn:not([disabled])').forEach(btn => {
+  container.innerHTML = `<div class="scene-canvas">${svgHtml}${hotspotsHtml}</div>`;
+
+  container.querySelectorAll('.scene-hotspot:not([disabled])').forEach(btn => {
     btn.addEventListener('click', () => handleObjectClick(btn.dataset.clueId));
   });
 }
@@ -278,7 +292,7 @@ function handleObjectClick(clueId) {
     state.visitedDecoys.add(obj.id);
     showDecoyFeedback(obj.decoy_text || 'Ingenting av intresse här.');
     // Uppdatera knappens utseende till "visited"
-    const btn = document.querySelector(`.obj-btn[data-clue-id="${clueId}"]`);
+    const btn = document.querySelector(`.scene-hotspot[data-clue-id="${clueId}"]`);
     if (btn) btn.classList.add('visited');
   } else {
     openClueModal(clueId);
