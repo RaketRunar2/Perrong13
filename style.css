@@ -281,6 +281,10 @@ body {
 .room { display: none; padding: 2rem 1.5rem; max-width: 960px; margin: 0 auto; width: 100%; }
 .room.active { display: block; }
 
+/* Scenrum – inget padding, full bredd upp till max */
+.room.room-scene { padding: 1rem; max-width: 1200px; }
+.scene-room-wrap { width: 100%; }
+
 .room-header {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
@@ -810,174 +814,145 @@ body {
    RUMMILJÖER – GRAFISK DESIGN
    ══════════════════════════════════════════════════════════ */
 
-.scene-wrap {
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 2rem;
+/* ══ ÄVENTYRSSPELSCEN ══════════════════════════════════════ */
+
+/* Scencanvas – behåller 16:9 aspect ratio */
+.scene-canvas {
   position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 8px 40px rgba(0,0,0,.7);
+  cursor: default;
 }
 
-/* PERRONGEN – djupmörk blå, elektrisk cyan, perspektivlinjer */
-.scene-platform {
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(0,160,220,.18) 0%, transparent 65%),
-    linear-gradient(175deg, #060c18 0%, #0d1a2e 55%, #060f1c 100%);
-  padding: 2rem 1.5rem 1.75rem;
-  border: 1px solid #1a3a5c;
-}
-.scene-platform::before {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0; height: 45%;
-  background:
-    repeating-linear-gradient(
-      89deg,
-      transparent, transparent 55px,
-      rgba(0,200,255,.05) 55px, rgba(0,200,255,.05) 56px
-    ),
-    linear-gradient(180deg, transparent 0%, rgba(0,20,40,.9) 100%);
-  pointer-events: none;
-}
-.scene-platform::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 10%; right: 10%; height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(0,200,255,.3), transparent);
-  pointer-events: none;
-}
-
-/* ARKIVRUMMET – sepia/brun, brinnande amber, bokhyllsilhuetter */
-.scene-archive {
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(160,80,0,.2) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 20%, rgba(100,40,0,.15) 0%, transparent 45%),
-    linear-gradient(170deg, #1a0e04 0%, #2a1a08 55%, #1a0e04 100%);
-  padding: 2rem 1.5rem 1.75rem;
-  border: 1px solid #4a2e10;
-}
-.scene-archive::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent, transparent 46px,
-      rgba(120,70,10,.18) 46px, rgba(120,70,10,.18) 48px
-    );
-  pointer-events: none;
-}
-.scene-archive::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, transparent, rgba(200,130,30,.4), transparent);
-  pointer-events: none;
-}
-
-/* MINNESRUMMET – djuplila, violett/rosa, svävande bubblor */
-.scene-memory {
-  background:
-    radial-gradient(ellipse at 25% 35%, rgba(100,0,160,.45) 0%, transparent 55%),
-    radial-gradient(ellipse at 75% 65%, rgba(140,0,100,.35) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 100%, rgba(60,0,120,.3) 0%, transparent 60%),
-    linear-gradient(160deg, #0d0818 0%, #160d25 100%);
-  padding: 2rem 1.5rem 1.75rem;
-  border: 1px solid #2d1458;
-}
-.scene-memory::before {
-  content: '';
+.scene-canvas svg {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 15% 80%, rgba(180,100,255,.07) 0%, transparent 35%),
-    radial-gradient(circle at 85% 20%, rgba(255,80,180,.06) 0%, transparent 30%);
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Hotspot – cirkulär knapp placerad absolut över scenen */
+.scene-hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
+  z-index: 10;
+  padding: 0;
+}
+
+/* Pulsring runt ej-besökta hotspots */
+.scene-hotspot:not(.visited):not(.collected)::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: hotspot-pulse 2.2s ease-out infinite;
   pointer-events: none;
 }
-
-/* Atmosfärtext */
-.scene-atmo {
-  font-style: italic;
-  font-family: var(--font-body);
-  font-size: .95rem;
-  line-height: 1.75;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  position: relative;
-  z-index: 1;
-}
-.scene-platform .scene-atmo { color: #5ac8dc; }
-.scene-archive  .scene-atmo { color: #c8882a; }
-.scene-memory   .scene-atmo { color: #b080e0; }
-
-/* Objektrutnät */
-.object-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: .75rem;
-  position: relative;
-  z-index: 1;
+@keyframes hotspot-pulse {
+  0%   { transform: scale(1);   opacity: .65; }
+  100% { transform: scale(1.7); opacity: 0; }
 }
 
-/* Objektknapp */
-.obj-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .35rem;
-  padding: 1.1rem .6rem .9rem;
-  border-radius: 10px;
-  border: 2px solid rgba(255,255,255,.1);
-  background: rgba(255,255,255,.04);
-  cursor: pointer;
-  transition: .2s ease;
-  position: relative;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+/* Rumsspecifika accent-färger */
+.scene-hotspot.hs-platform {
+  color: #00cfff;
+  border-color: rgba(0,207,255,.35);
 }
-.scene-platform .obj-btn:hover {
+.scene-hotspot.hs-platform:hover {
   border-color: #00cfff;
-  box-shadow: 0 0 20px rgba(0,207,255,.3), inset 0 0 12px rgba(0,207,255,.06);
-  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 0 22px rgba(0,207,255,.55);
+  transform: translate(-50%,-50%) scale(1.18);
 }
-.scene-archive .obj-btn:hover {
+
+.scene-hotspot.hs-archive {
+  color: #e8952a;
+  border-color: rgba(232,149,42,.35);
+}
+.scene-hotspot.hs-archive:hover {
   border-color: #e8952a;
-  box-shadow: 0 0 20px rgba(232,149,42,.3), inset 0 0 12px rgba(232,149,42,.06);
-  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 0 22px rgba(232,149,42,.55);
+  transform: translate(-50%,-50%) scale(1.18);
 }
-.scene-memory .obj-btn:hover {
+
+.scene-hotspot.hs-memory {
+  color: #c070ff;
+  border-color: rgba(192,112,255,.35);
+}
+.scene-hotspot.hs-memory:hover {
   border-color: #c070ff;
-  box-shadow: 0 0 20px rgba(192,112,255,.3), inset 0 0 12px rgba(192,112,255,.06);
-  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 0 22px rgba(192,112,255,.55);
+  transform: translate(-50%,-50%) scale(1.18);
 }
 
-.obj-emoji { font-size: 2.1rem; line-height: 1; }
-.obj-name {
-  font-family: var(--font-mono);
-  font-size: .62rem;
-  letter-spacing: .05em;
-  color: rgba(255,255,255,.5);
-  text-align: center;
-  text-transform: uppercase;
-  line-height: 1.3;
+/* Emoji i hotspot */
+.hotspot-emoji {
+  font-size: 1.65rem;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
 }
 
-/* Pulsande färgprick – ej besökt */
-.obj-dot {
+/* Namn-label som dyker upp ovanför vid hover */
+.hotspot-label {
   position: absolute;
-  top: 7px; right: 7px;
-  width: 8px; height: 8px;
-  border-radius: 50%;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(0,0,0,.88);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-family: var(--font-mono);
+  font-size: .6rem;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.85);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
 }
-.scene-platform .obj-dot { background: #00cfff; }
-.scene-archive  .obj-dot { background: #e8952a; }
-.scene-memory   .obj-dot { background: #c070ff; }
-.obj-btn:not(.visited):not(.collected) .obj-dot { animation: pulse 1.4s ease infinite alternate; }
-.obj-btn.visited   .obj-dot { background: rgba(255,255,255,.15); animation: none; }
-.obj-btn.collected              { border-color: #2a8a5a !important; opacity: .6; }
-.obj-btn.collected .obj-dot     { background: #4caf8a !important; animation: none; }
-.obj-btn.collected:hover        { transform: none; box-shadow: none; cursor: default; }
+.scene-hotspot:hover .hotspot-label { opacity: 1; }
+
+/* Insamlad ledtråd */
+.scene-hotspot.collected {
+  border-color: #2a8a5a !important;
+  background: rgba(42,138,90,.2) !important;
+  color: #4caf8a !important;
+  opacity: .55;
+  cursor: default;
+}
+.scene-hotspot.collected::after { display: none; }
+.scene-hotspot.collected:hover {
+  transform: translate(-50%,-50%) !important;
+  box-shadow: none !important;
+}
+
+/* Besökt lockbete */
+.scene-hotspot.visited {
+  border-color: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.3) !important;
+  opacity: .4;
+}
+.scene-hotspot.visited::after { display: none; }
 
 /* Decoy-toast */
 .decoy-toast {
