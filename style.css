@@ -836,78 +836,33 @@ body {
   display: block;
 }
 
-/* Hotspot – cirkulär knapp placerad absolut över scenen */
+/* Hotspot – osynlig träffyta, syns bara vid hover */
 .scene-hotspot {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,.25);
-  background: rgba(0,0,0,.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background: transparent;
+  cursor: crosshair;
+  transition: border-color .15s ease, box-shadow .15s ease;
   z-index: 10;
   padding: 0;
 }
 
-/* Pulsring runt ej-besökta hotspots */
-.scene-hotspot:not(.visited):not(.collected)::after {
-  content: '';
-  position: absolute;
-  inset: -7px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  animation: hotspot-pulse 2.2s ease-out infinite;
-  pointer-events: none;
-}
-@keyframes hotspot-pulse {
-  0%   { transform: scale(1);   opacity: .65; }
-  100% { transform: scale(1.7); opacity: 0; }
-}
-
-/* Rumsspecifika accent-färger */
-.scene-hotspot.hs-platform {
-  color: #00cfff;
-  border-color: rgba(0,207,255,.35);
-}
+/* Rumsspecifika hover-glows */
 .scene-hotspot.hs-platform:hover {
-  border-color: #00cfff;
-  box-shadow: 0 0 22px rgba(0,207,255,.55);
-  transform: translate(-50%,-50%) scale(1.18);
-}
-
-.scene-hotspot.hs-archive {
-  color: #e8952a;
-  border-color: rgba(232,149,42,.35);
+  border-color: rgba(0,207,255,.55);
+  box-shadow: 0 0 20px rgba(0,207,255,.3) inset, 0 0 12px rgba(0,207,255,.2);
 }
 .scene-hotspot.hs-archive:hover {
-  border-color: #e8952a;
-  box-shadow: 0 0 22px rgba(232,149,42,.55);
-  transform: translate(-50%,-50%) scale(1.18);
-}
-
-.scene-hotspot.hs-memory {
-  color: #c070ff;
-  border-color: rgba(192,112,255,.35);
+  border-color: rgba(232,149,42,.55);
+  box-shadow: 0 0 20px rgba(232,149,42,.3) inset, 0 0 12px rgba(232,149,42,.2);
 }
 .scene-hotspot.hs-memory:hover {
-  border-color: #c070ff;
-  box-shadow: 0 0 22px rgba(192,112,255,.55);
-  transform: translate(-50%,-50%) scale(1.18);
-}
-
-/* Emoji i hotspot */
-.hotspot-emoji {
-  font-size: 1.65rem;
-  line-height: 1;
-  pointer-events: none;
-  user-select: none;
+  border-color: rgba(192,112,255,.55);
+  box-shadow: 0 0 20px rgba(192,112,255,.3) inset, 0 0 12px rgba(192,112,255,.2);
 }
 
 /* Namn-label som dyker upp ovanför vid hover */
@@ -932,27 +887,22 @@ body {
 }
 .scene-hotspot:hover .hotspot-label { opacity: 1; }
 
-/* Insamlad ledtråd */
+/* Insamlad ledtråd – synlig som diskret grön ruta */
 .scene-hotspot.collected {
-  border-color: #2a8a5a !important;
-  background: rgba(42,138,90,.2) !important;
-  color: #4caf8a !important;
-  opacity: .55;
+  border-color: rgba(76,175,138,.5) !important;
+  background: rgba(42,138,90,.1) !important;
+  opacity: .45;
   cursor: default;
 }
-.scene-hotspot.collected::after { display: none; }
 .scene-hotspot.collected:hover {
-  transform: translate(-50%,-50%) !important;
   box-shadow: none !important;
 }
 
 /* Besökt lockbete */
 .scene-hotspot.visited {
-  border-color: rgba(255,255,255,.12) !important;
-  color: rgba(255,255,255,.3) !important;
-  opacity: .4;
+  opacity: .25;
+  cursor: default;
 }
-.scene-hotspot.visited::after { display: none; }
 
 /* Decoy-toast */
 .decoy-toast {

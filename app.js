@@ -5,22 +5,48 @@
 'use strict';
 
 // ── Hotspot-positioner (% av scenens bredd/höjd) ─────────
-// x%, y% = centrum för hotspot-knappen
+// x%, y% = centrum för hotspot-knappen (justerat för nya perspektivscener)
 const ROOM_POSITIONS = {
-  'A': { x: 13, y: 40 },  // Protokollhyllan  – bokhyllor vänster
-  'B': { x:  9, y: 76 },  // Resväskan        – perrong vänster
-  'C': { x: 67, y: 65 },  // Färjeloggen      – skrivbord
-  'D': { x: 34, y: 62 },  // Grammofonen      – bord vänster
-  'E': { x: 37, y: 84 },  // Det våta spåret  – spår
-  'F': { x: 82, y: 47 },  // Biljettluckan    – biljettlucka höger
-  'G': { x: 61, y: 33 },  // Blomkransen      – vägg höger
-  'H': { x: 87, y: 65 },  // Eldstaden        – spis höger
-  'I': { x: 15, y: 63 },  // Bänken (lockbete)– perrong vänster
-  'J': { x:  5, y: 10 },  // Spindelnätet (l) – hörn uppe vänster
-  'K': { x: 14, y: 42 },  // Fönstret (lockbete)– minnesrummet
-  'L': { x: 50, y: 30 },  // Stationsuret     – klockstolpe center
-  'M': { x: 56, y: 67 },  // Passagerarlistan – skrivbord
-  'N': { x: 82, y: 44 },  // Spegelns baksida – spegel höger
+  // ARKIVRUMMET
+  'A': { x: 11, y: 42 },  // Protokollhyllan  – vänster bokhylla
+  'C': { x: 63, y: 74 },  // Färjeloggen      – skrivbord (grön bok)
+  'H': { x: 87, y: 56 },  // Eldstaden        – spis höger vägg
+  'J': { x:  6, y:  9 },  // Spindelnätet     – tak vänster hörn
+  'M': { x: 47, y: 71 },  // Passagerarlistan – skrivbord (papper)
+  // PERRONGEN
+  'B': { x:  9, y: 80 },  // Resväskan        – perrong vänster
+  'E': { x: 36, y: 87 },  // Det våta spåret  – vid spårkant
+  'F': { x: 82, y: 44 },  // Biljettluckan    – höger stationsbyggnad
+  'I': { x: 16, y: 65 },  // Bänken           – perrong vänster
+  'L': { x: 50, y: 26 },  // Stationsuret     – klockstolpe center
+  // MINNESRUMMET
+  'D': { x: 29, y: 68 },  // Grammofonen      – bord vänster
+  'G': { x: 49, y: 29 },  // Blomkransen      – bakvägg center
+  'K': { x: 12, y: 40 },  // Fönstret         – vänstervägg
+  'N': { x: 84, y: 46 },  // Spegelns baksida – höger oval spegel
+};
+
+// ── Extra hårdkodade lockbeten per rum ───────────────────
+const EXTRA_HOTSPOTS = {
+  'Arkivrummet': [
+    { id:'xa1', x:41, y:48, name:'Porträttet',    msg:'En okänd dam stirrar kallt mot dig. Ögonen tycks följa varje rörelse.' },
+    { id:'xa2', x:71, y:65, name:'Arkivskåpet',   msg:'Järnlådorna är låsta. Nycklarna är borta sedan länge.' },
+    { id:'xa3', x:38, y:88, name:'Stolen',         msg:'Soffkudden är intryckt. Någon satt här alldeles nyligen.' },
+    { id:'xa4', x:78, y:32, name:'Ljusstaken',    msg:'Talgljuset brinner lågt. Värmen mot handryggen avslöjar att det är färskt.' },
+    { id:'xa5', x:24, y:52, name:'Fönstret',       msg:'Rutat glas, fuktigt på insidan. Kall luft sipprar in längs ramen.' },
+  ],
+  'Perrongen': [
+    { id:'xp1', x:34, y:66, name:'Rälsen',        msg:'Kall metall och mörker. Det sista tåget passerade för länge sedan.' },
+    { id:'xp2', x:18, y:37, name:'Gaslycktan',    msg:'Lågan flämtar i vinddraget. Dimman slukar allt bortom den.' },
+    { id:'xp3', x:55, y:54, name:'Plattformskanten', msg:'Stenkanten är slät och kall. Ingenting lämnat kvar.' },
+    { id:'xp4', x:64, y:72, name:'Dimman',        msg:'Tät som vit ull. Vad som helst kan döljas därinne.' },
+  ],
+  'Minnesrummet': [
+    { id:'xm1', x:51, y:40, name:'Tapeten',       msg:'En egendomlig symbol, knappt synlig, ristad in bakom tapetens mönster.' },
+    { id:'xm2', x:22, y:80, name:'Bordet',        msg:'Under bordsduken finns ett naggat hörn. En gammal, dold skada.' },
+    { id:'xm3', x:65, y:55, name:'Fåtöljen',      msg:'Tyget är nött längs armstöden. Någon satt här i timtal, gång på gång.' },
+    { id:'xm4', x:42, y:72, name:'Notstativet',   msg:'Tomma noter utan ett enda tecknat. Musiken är sedan länge borta.' },
+  ],
 };
 
 // ── Supabase-konfiguration ───────────────────────────────
@@ -253,34 +279,51 @@ function renderRoomScene(location, containerId) {
 
   const hsClass = { 'Arkivrummet': 'hs-archive', 'Perrongen': 'hs-platform', 'Minnesrummet': 'hs-memory' }[location] || '';
 
+  // DB-objekt (äkta ledtrådar + DB-lockbeten)
   const hotspotsHtml = roomObjects.map(obj => {
     const pos          = ROOM_POSITIONS[obj.label] || { x: 50, y: 50 };
     const collected    = !obj.is_decoy && state.foundClues.has(obj.label);
     const decoyVisited = obj.is_decoy  && state.visitedDecoys.has(obj.id);
     const stateClass   = collected ? 'collected' : decoyVisited ? 'visited' : '';
-    const emoji        = escHtml(obj.object_emoji || '❓');
     const name         = escHtml(obj.object_name  || obj.label);
 
-    return `
-      <button class="scene-hotspot ${hsClass} ${stateClass}"
+    return `<button class="scene-hotspot ${hsClass} ${stateClass}"
               data-clue-id="${escHtml(obj.id)}"
               style="left:${pos.x}%;top:${pos.y}%"
               aria-label="${name}"
               ${collected ? 'disabled' : ''}>
-        <span class="hotspot-emoji">${emoji}</span>
+        <span class="hotspot-label">${name}</span>
+      </button>`;
+  }).join('');
+
+  // Extra hårdkodade lockbeten (ej i databasen)
+  const extrasHtml = (EXTRA_HOTSPOTS[location] || []).map(e => {
+    const name = escHtml(e.name);
+    const msg  = escHtml(e.msg);
+    return `<button class="scene-hotspot ${hsClass} extra-decoy"
+              data-extra-msg="${msg}"
+              style="left:${e.x}%;top:${e.y}%"
+              aria-label="${name}">
         <span class="hotspot-label">${name}</span>
       </button>`;
   }).join('');
 
   // SVG-scene hämtas från hidden template i HTML
-  const svgKey   = { 'Arkivrummet': 'svg-archive', 'Perrongen': 'svg-platform', 'Minnesrummet': 'svg-memory' }[location];
-  const svgEl    = document.getElementById(svgKey);
-  const svgHtml  = svgEl ? svgEl.innerHTML : '';
+  const svgKey  = { 'Arkivrummet': 'svg-archive', 'Perrongen': 'svg-platform', 'Minnesrummet': 'svg-memory' }[location];
+  const svgEl   = document.getElementById(svgKey);
+  const svgHtml = svgEl ? svgEl.innerHTML : '';
 
-  container.innerHTML = `<div class="scene-canvas">${svgHtml}${hotspotsHtml}</div>`;
+  container.innerHTML = `<div class="scene-canvas">${svgHtml}${hotspotsHtml}${extrasHtml}</div>`;
 
   container.querySelectorAll('.scene-hotspot:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', () => handleObjectClick(btn.dataset.clueId));
+    if (btn.classList.contains('extra-decoy')) {
+      btn.addEventListener('click', () => {
+        showDecoyFeedback(btn.dataset.extraMsg);
+        btn.classList.add('visited');
+      });
+    } else {
+      btn.addEventListener('click', () => handleObjectClick(btn.dataset.clueId));
+    }
   });
 }
 
